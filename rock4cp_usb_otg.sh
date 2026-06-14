@@ -19,7 +19,7 @@ trap 'echo >&2 "ERROR: Script failed at line ${LINENO}"' ERR
 #
 
 GH_USER="${GH_USER:-herrfrei}"
-GH_REPO="${GH_REPO:-dietpi-rpk4cp}"
+GH_REPO="${GH_REPO:-armbian-rpk4cp}"
 BRANCH="${BRANCH:-main}"
 
 # ---------------------------------------------------------------------------
