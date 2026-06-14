@@ -1,0 +1,72 @@
+#!/bin/bash
+
+# Copyright (c) 2017 The Armbian Project https://www.armbian.com/
+# Modified to activate kernel-provided overlays under the "overlays=" key
+# in /boot/armbianEnv.txt, without compiling any source file.
+#
+# Usage: armbian-activate-overlay <overlay_name>
+#
+# <overlay_name> is the bare overlay name without prefix or extension,
+# e.g. "rk3399-i2c7" for /boot/dtb/rockchip/overlay/rockchip-rk3399-i2c7.dtbo
+#
+# The overlay must already exist as a compiled .dtbo in the kernel overlay
+# directory (/boot/dtb/${LINUXFAMILY}/overlay/${overlay_prefix}-<name>.dtbo).
+
+if [[ ! -n $1 ]]; then
+	echo >&2 "Usage: $0 <overlay_name>"
+	echo >&2 "Example: $0 rk3399-i2c7"
+	exit -1
+fi
+
+if [[ $EUID -ne 0 ]]; then
+	echo >&2 "This program must be run with superuser rights"
+	exit -1
+fi
+
+if [[ ! -f /etc/armbian-release || ! -f /boot/armbianEnv.txt ]]; then
+	echo >&2 "Armbian is not installed properly. Missing armbian-release or armbianEnv.txt"
+	exit -1
+fi
+
+. /etc/armbian-release
+
+if ! grep -q '^setenv overlay_error' /boot/boot.cmd; then
+	echo >&2 "Overlays are not supported on ${LINUXFAMILY^} based boards."
+	exit -1
+fi
+
+overlay_name="$1"
+
+# Derive the overlay prefix from armbianEnv.txt (e.g. "rockchip")
+overlay_prefix=$(grep '^overlay_prefix=' /boot/armbianEnv.txt | cut -d'=' -f2)
+if [[ -z "${overlay_prefix}" ]]; then
+	overlay_prefix="${LINUXFAMILY}"
+fi
+
+# Verify the .dtbo actually exists on this system
+overlay_dir="/boot/dtb/${LINUXFAMILY}/overlay"
+overlay_file="${overlay_dir}/${overlay_prefix}-${overlay_name}.dtbo"
+
+if [[ ! -f "${overlay_file}" ]]; then
+	echo >&2 "Error: overlay file not found: ${overlay_file}"
+	echo >&2 "Available overlays matching '${overlay_name}':"
+	find "${overlay_dir}" -name "*${overlay_name}*" 2>/dev/null | sed 's|.*/||' | sed "s/${overlay_prefix}-//" | sed 's/\.dtbo//' >&2
+	exit -1
+fi
+
+# Register under the "overlays=" key in armbianEnv.txt
+if grep -q '^overlays=' /boot/armbianEnv.txt; then
+	line=$(grep '^overlays=' /boot/armbianEnv.txt | cut -d'=' -f2)
+	if grep -qE "(^|[[:space:]])${overlay_name}([[:space:]]|$)" <<< "${line}"; then
+		echo "Overlay ${overlay_name} was already added to /boot/armbianEnv.txt, skipping"
+	elif grep -q '^overlays=\s*$' /boot/armbianEnv.txt; then
+		sed -i -e "s/^overlays=\s*$/overlays=${overlay_name}/" /boot/armbianEnv.txt
+	else
+		sed -i -e "/^overlays=/ s/$/ ${overlay_name}/" /boot/armbianEnv.txt
+	fi
+else
+	sed -i -e "\$aoverlays=${overlay_name}" /boot/armbianEnv.txt
+fi
+
+echo "Overlay ${overlay_name} added to /boot/armbianEnv.txt under 'overlays='"
+echo "Reboot is required to apply the changes"
