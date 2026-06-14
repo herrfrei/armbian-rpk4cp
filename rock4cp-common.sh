@@ -8,7 +8,7 @@
 # Common variables — can be overridden by the calling script before sourcing
 # ---------------------------------------------------------------------------
 GH_USER="${GH_USER:-herrfrei}"
-GH_REPO="${GH_REPO:-dietpi-rpk4cp}"
+GH_REPO="${GH_REPO:-armbian-rpk4cp}"
 BRANCH="${BRANCH:-main}"
 BOOT_DIR="${BOOT_DIR:-/boot}"
 
@@ -74,57 +74,13 @@ function check_or_install_temp_script {
 }
 
 #
-# Ensure the device-tree-compiler is available.
-# The overlay DTS is compiled locally so it matches the running kernel's
-# base device tree — pre-compiled blobs may be incompatible across kernel
-# versions (e.g. Linux 6.12 broke pre-built overlays).
-#
-function check_or_install_dtc {
-    if ! command -v dtc >/dev/null 2>&1; then
-        echo "device-tree-compiler not found, installing..."
-        apt-get update
-        apt-get install -y device-tree-compiler
-        if ! command -v dtc >/dev/null 2>&1; then
-            echo >&2 "ERROR: dtc is still unavailable after installation"
-            exit 1
-        fi
-    fi
-}
-
-#
 # Activate a vendor overlay that is already present on the system.
 # Only registers the overlay name under the "overlays" key in armbianEnv.txt.
 # No .dtbo download or compilation is performed.
 #
 function activate_vendor_overlay {
     local OVERLAY="$1"
-    if ! command -v armbian-add-overlay >/dev/null 2>&1; then
-        echo >&2 "ERROR: armbian-add-overlay not found — is this an Armbian system?"
-        exit 1
-    fi
-    # armbian-add-overlay without a path argument registers a kernel-provided
-    # overlay by name under the "overlays" key in armbianEnv.txt.
-    armbian-add-overlay "${OVERLAY}"
-}
-
-#
-# Compile a .dts source file and register it as a user overlay via
-# armbian-add-overlay, which handles compilation, placement into
-# /boot/overlay-user/, and registration in armbianEnv.txt.
-#
-# armbian-add-overlay expects a .dts file path as its argument.
-# It compiles with dtc internally (installing it if needed) and writes
-# the .dtbo to /boot/overlay-user/, then adds the overlay name under
-# "user_overlays" in /boot/armbianEnv.txt.
-#
-function compile_overlay {
-    local DTS_FILE="$1"
-
-    if ! command -v armbian-add-overlay >/dev/null 2>&1; then
-        echo >&2 "ERROR: armbian-add-overlay not found — is this an Armbian system?"
-        exit 1
-    fi
-
-    echo "Installing overlay via armbian-add-overlay: ${DTS_FILE}"
-    armbian-add-overlay "${DTS_FILE}"
+    check_or_install_temp_script \
+        "https://raw.githubusercontent.com/${GH_USER}/${GH_REPO}/${BRANCH}/armbian-activate-overlay"
+    /tmp/armbian-activate-overlay "${OVERLAY}"
 }

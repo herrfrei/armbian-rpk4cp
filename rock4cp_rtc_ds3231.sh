@@ -82,7 +82,7 @@ cat > /tmp/rk3399-i2c7-ds3231.dts << '_EOF_'
 };
 _EOF_
 
-compile_overlay "/tmp/rk3399-i2c7-ds3231.dts"
+armbian-add-overlay "/tmp/rk3399-i2c7-ds3231.dts"
 
 # ---------------------------------------------------------------------------
 # Disable fake-hwclock and install real hwclock service

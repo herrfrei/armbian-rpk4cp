@@ -28,6 +28,7 @@ if [[ ! -f /etc/armbian-release || ! -f /boot/armbianEnv.txt ]]; then
 	exit -1
 fi
 
+# gives us LINUXFAMILY and OVERLAY_DIR
 . /etc/armbian-release
 
 if ! grep -q '^setenv overlay_error' /boot/boot.cmd; then
@@ -44,8 +45,7 @@ if [[ -z "${overlay_prefix}" ]]; then
 fi
 
 # Verify the .dtbo actually exists on this system
-overlay_dir="/boot/dtb/${LINUXFAMILY}/overlay"
-overlay_file="${overlay_dir}/${overlay_prefix}-${overlay_name}.dtbo"
+overlay_file="${OVERLAY_DIR}/${overlay_prefix}-${overlay_name}.dtbo"
 
 if [[ ! -f "${overlay_file}" ]]; then
 	echo >&2 "Error: overlay file not found: ${overlay_file}"
