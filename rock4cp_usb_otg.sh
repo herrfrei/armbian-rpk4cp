@@ -112,7 +112,7 @@ fi
 echo '};'
 } > "${DTS_FILE}"
 
-compile_overlay "${DTS_FILE}"
+armbian-add-overlay "${DTS_FILE}"
 
 # ---------------------------------------------------------------------------
 # Summary

@@ -146,7 +146,7 @@ Speed is controlled by the fancontrol daemon. No kernel thermal trips are used."
 };
 _EOF_
 
-compile_overlay "/tmp/rk3399-pwm-fan.dts"
+armbian-add-overlay "/tmp/rk3399-pwm-fan.dts"
 
 # ---------------------------------------------------------------------------
 # Write first-boot finalize script
